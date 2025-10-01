@@ -1,0 +1,76 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.preprocessing import StandardScaler
+from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.pyplot as plt
+
+np.random.seed(42)
+X = np.concatenate([
+    np.random.normal([1, 1], 0.5, size=(100, 2)),
+    np.random.normal([5, 5], 0.5, size=(100, 2)),
+    np.random.normal([1, 5], 0.5, size=(100, 2))
+])
+data = pd.DataFrame(X, columns=['Feature_A', 'Feature_B'])
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(data)
+
+# --- K-MEANS CLUSTERING ---
+K_range = range(1, 11)
+inertia = []
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    inertia.append(kmeans.inertia_)
+
+plt.figure(figsize=(8, 4))
+plt.plot(K_range, inertia, marker='o')
+plt.title('Elbow Method')
+plt.xlabel('Number of Clusters (K)')
+plt.ylabel('Inertia')
+plt.grid(True)
+plt.show() 
+
+optimal_k = 3
+kmeans_model = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
+kmeans_model.fit(X_scaled)
+data['Cluster_KMeans'] = kmeans_model.labels_
+
+plt.figure(figsize=(8, 6))
+plt.scatter(data['Feature_A'], data['Feature_B'], c=data['Cluster_KMeans'], cmap='viridis', s=50, alpha=0.7)
+plt.scatter(scaler.inverse_transform(kmeans_model.cluster_centers_)[:, 0],
+            scaler.inverse_transform(kmeans_model.cluster_centers_)[:, 1],
+            marker='X', s=200, color='red')
+plt.title(f'K-Means Clustering (K={optimal_k})')
+plt.xlabel('Feature A')
+plt.ylabel('Feature B')
+plt.show() 
+
+print("K-Means Cluster Sizes:")
+print(data['Cluster_KMeans'].value_counts())
+print("\n" + "="*50 + "\n")
+
+# --- HIERARCHICAL CLUSTERING ---
+linked = linkage(X_scaled, method='ward')
+
+plt.figure(figsize=(10, 5))
+dendrogram(linked, orientation='top', distance_sort='descending', show_leaf_counts=False)
+plt.title('Hierarchical Clustering Dendrogram')
+plt.xlabel('Sample Index')
+plt.ylabel('Distance')
+plt.show() 
+
+optimal_k_hac = 3
+hac_model = AgglomerativeClustering(n_clusters=optimal_k_hac, linkage='ward')
+data['Cluster_HAC'] = hac_model.fit_predict(X_scaled)
+
+plt.figure(figsize=(8, 6))
+plt.scatter(data['Feature_A'], data['Feature_B'], c=data['Cluster_HAC'], cmap='viridis', s=50, alpha=0.7)
+plt.title(f'Hierarchical Clustering (K={optimal_k_hac})')
+plt.xlabel('Feature A')
+plt.ylabel('Feature B')
+plt.show() 
+
+print("Hierarchical Cluster Sizes:")
+print(data['Cluster_HAC'].value_counts())

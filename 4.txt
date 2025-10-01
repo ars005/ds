@@ -1,0 +1,57 @@
+# Import libraries
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
+
+# Load Iris dataset
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+# Split into train-test
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# ------------------------
+# 4.1 Decision Tree Induction
+# ------------------------
+dt_entropy = DecisionTreeClassifier(criterion="entropy", random_state=42)
+dt_entropy.fit(X_train, y_train)
+y_pred_dt = dt_entropy.predict(X_test)
+print("Decision Tree (Entropy) Accuracy:", accuracy_score(y_test, y_pred_dt))
+
+# Plot Decision Tree
+plt.figure(figsize=(10,6))
+plot_tree(dt_entropy, feature_names=iris.feature_names, class_names=iris.target_names, filled=True)
+plt.title("Decision Tree (Entropy)")
+plt.show()
+
+# ------------------------
+# 4.2 Naïve Bayes Algorithm
+# ------------------------
+nb = GaussianNB()
+nb.fit(X_train, y_train)
+y_pred_nb = nb.predict(X_test)
+print("Naive Bayes Accuracy:", accuracy_score(y_test, y_pred_nb))
+
+# ------------------------
+# 4.3 Decision Tree with Various Criteria
+# ------------------------
+
+# Using Gini Index
+dt_gini = DecisionTreeClassifier(criterion="gini", random_state=42)
+dt_gini.fit(X_train, y_train)
+y_pred_gini = dt_gini.predict(X_test)
+print("Decision Tree (Gini Index) Accuracy:", accuracy_score(y_test, y_pred_gini))
+
+# Using Entropy (Information Gain)
+dt_entropy2 = DecisionTreeClassifier(criterion="entropy", random_state=42)
+dt_entropy2.fit(X_train, y_train)
+y_pred_entropy = dt_entropy2.predict(X_test)
+print("Decision Tree (Information Gain) Accuracy:", accuracy_score(y_test, y_pred_entropy))
+
+# Gain Ratio not directly in sklearn
+print("Note: Gain Ratio is extension of Information Gain (C4.5 algorithm).")
