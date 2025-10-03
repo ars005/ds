@@ -1,66 +1,89 @@
-#AIM 2c
+# Practical-2
+# To implement data cleaning
+# 2.1) Removing leading or lagging spaces from a data entry
+# 2.2) Removing nonprintable characters from a data entry
+# 2.3) Data cleaning: handling missing values, type conversion,   data transformations, removing duplicates.
+# 2.4) To detect outliers in the given data.
+
+# Import libraries
 import pandas as pd
 import numpy as np
+import re
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
 
-def clean_dataset(df):
-    print("----Handling Missing Values----") 
-    print("Missing values before cleaning:\n", df.isnull().sum())
+# Step 1: Create sample dataset
+data = {
+    "ID": [1, 2, 3, 4, 5, 5],
+    "Name": ["  Alice  ", " Bob", "Charlie  ", "  David", "Eva", "Eva"],
+    "Age": [25, np.nan, 30, 45, 60, 60],
+    "Salary": [30000, 40000, np.nan, 80000, 120000, 120000],
+    "Comment": ["Hello\t", "World\n", "Good\rDay", "Clean Data\x0c", "Nice", "Nice"],
+    "Department": ["HR", "IT", "Finance", "IT", np.nan, "IT"],
+}
+df = pd.DataFrame(data)
+print("Original Dataset:\n", df)
 
-    # Handle numeric columns
-    for col in df.select_dtypes(include=np.number).columns:
-        if df[col].isnull().any():
-            df[col] = df[col].fillna(df[col].mean())
+# -----------------------------
+# 2.1 Removing Leading/Trailing Spaces
+# -----------------------------
+df["Name"] = df["Name"].str.strip()
 
-    # Handle object (categorical) columns
-    for col in df.select_dtypes(include="object").columns:
-        if df[col].isnull().any():
-            df[col] = df[col].fillna(df[col].mode()[0])
 
-    print("Missing values after filling:\n", df.isnull().sum())
+# -----------------------------
+# 2.2 Removing Non-printable Characters
+# -----------------------------
+def remove_nonprintable(text):
+    return re.sub(r"[^\x20-\x7E]", "", str(text))
 
-    # --- Type Conversion ---
-    print("\n--- Type Conversion ---")
-    if 'some_numeric_column_as_string' in df.columns:
-        df['some_numeric_column_as_string'] = pd.to_numeric(
-            df['some_numeric_column_as_string'], errors='coerce'
-        )
-        df['some_numeric_column_as_string'] = df['some_numeric_column_as_string'].fillna(
-            df['some_numeric_column_as_string'].mean()
-        )
-        print("Converted 'some_numeric_column_as_string' to numeric.")
 
-    if 'date_column' in df.columns:
-        df['date_column'] = pd.to_datetime(df['date_column'], errors='coerce')
-        print("Converted 'date_column' to datetime.")
+df["Comment"] = df["Comment"].apply(remove_nonprintable)
 
-    # --- Data Transformation ---
-    print("\n--- Data Transformation ---")
-    if "column_a" in df.columns and "column_b" in df.columns:
-        df['new_feature'] = df['column_a'] * df['column_b']
-        print("Created 'new_feature' by multiplying 'column_a' and 'column_b'.")
+# -----------------------------
+# 2.3 Handling Missing Values, Type Conversion, Transformations, Duplicates
+# -----------------------------
 
-    # --- Removing Duplicates ---
-    print("\n--- Removing Duplicates ---")
-    initial_rows = len(df)
-    df.drop_duplicates(inplace=True)
-    print(f"Removed {initial_rows - len(df)} duplicate rows.")
+# Handling Missing Values
+df["Age"].fillna(df["Age"].mean(), inplace=True)
+df["Salary"].fillna(df["Salary"].median(), inplace=True)
+df["Department"].fillna("Unknown", inplace=True)
 
-    return df
+# Type Conversion
+df["ID"] = df["ID"].astype("int64")
+df["Salary"] = df["Salary"].astype("float64")
 
-# Main block
-if __name__ == "__main__":
-    data = {
-        'numerical_col_1': [1, 2, np.nan, 4, 5],
-        'numerical_col_2': [10, 5, 11, 2, 10],
-        'categorical_col': ['A', 'B', 'C', 'A', np.nan],
-        'some_numeric_column_as_string': ['100', '200', 'abc', '400', '500'],
-        'date_column': ["2023-01-01", "2023-01-02", "invalid_date", "2023-01-04", "2023-01-05"],
-        'column_a': [1, 2, 3, 4, 5],
-        'column_b': [5, 4, 3, 2, 1]
-    }
+# Data Transformation (log transform Salary)
+df["Log_Salary"] = np.log1p(df["Salary"])
 
-    sample_df = pd.DataFrame(data)
-    print("Original DataFrame:\n", sample_df)
+# Removing Duplicates
+df = df.drop_duplicates()
 
-    cleaned_df = clean_dataset(sample_df.copy())
-    print("\nCleaned DataFrame:\n", cleaned_df)
+print("\nCleaned Dataset:\n", df)
+
+# -----------------------------
+# 2.4 Outlier Detection
+# -----------------------------
+
+# IQR Method for Age
+Q1 = df["Age"].quantile(0.25)
+Q3 = df["Age"].quantile(0.75)
+IQR = Q3 - Q1
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+outliers_iqr = df[(df["Age"] < lower) | (df["Age"] > upper)]
+print("\nOutliers by IQR (Age):\n", outliers_iqr)
+
+# Z-score Method for Salary
+z_scores = np.abs(stats.zscore(df["Salary"]))
+outliers_z = df[z_scores > 3]
+print("\nOutliers by Z-Score (Salary):\n", outliers_z)
+
+# Visualization (Boxplots)
+sns.boxplot(x=df["Age"])
+plt.title("Outlier Detection (Age)")
+plt.show()
+
+sns.boxplot(x=df["Salary"])
+plt.title("Outlier Detection (Salary)")
+plt.show()

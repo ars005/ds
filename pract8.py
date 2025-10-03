@@ -1,73 +1,117 @@
-#AIM: 4C
-import pandas as pd
-import numpy as np
+# Practical -8
+# AIM:8.1 To evaluate our binary classification model using confusion matrix along with precision and recall.
+##CODE:
+# Import the necessary libraries
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-# Sample Dataset
-data = {
-'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast','Sunny', 'Sunny', 'Rain', 'Sunny', 'Overcast', 'Overcast', 'Rain'],
-'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Cool', 'Mild','Cool', 'Mild', 'Mild', 'Mild', 'Hot', 'Mild'],
-'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal','High', 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'High'],
-'Windy': ['False', 'True', 'False', 'False', 'False', 'True', 'True', 'False','False', 'False', 'True', 'True', 'False', 'True'],
-'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes' , 'No', 'Yes', 'No', 'Yes','Yes', 'Yes', 'Yes', 'Yes', 'No' ]
-}
+# Load the breast cancer dataset
+X, y = load_breast_cancer(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
 
-df = pd.DataFrame(data)
-print(data)
+# Train the Model
+tree = DecisionTreeClassifier(random_state=23)
+tree.fit(X_train, y_train)
 
-# Encode categorical variables
-X = pd.get_dummies(df.drop('PlayTennis', axis=1))
-y = df ['PlayTennis' ]
-feature_names = X.columns
+# Prediction
+y_pred = tree.predict(X_test)
 
-# Function to plot a clean decision tree (only attributes at nodes)
-def plot_clean_tree(clf, title): #3 usage
- plt.figure(figsize=(10, 6))
- plot_tree(clf,
- feature_names=feature_names,
- class_names=None,
- filled=False,
- rounded=True,
- impurity=False,
- proportion=False,
- label='none',
- fontsize=12)
+# compute the Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
 
- plt.title(title)
- plt. show()
+# plot the confusion matrix:
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="g",
+    xticklabels=["malignant" "benign"],
+    yticklabels=["malignant" "benign"],
+)
+plt.ylabel("Prediction", fontsize=13)
+plt.xlabel("Actual", fontsize=13)
+plt.title("Confusion Matrix", fontsize=17)
+plt.show()
 
-#Gini Index
+# Finding precision and recall
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy :", accuracy)
+precision = precision_score(y_test, y_pred)
+print("Precision :", precision)
+recall = recall_score(y_test, y_pred)
+print("Recall :", recall)
+F2_score = f1_score(y_test, y_pred)
+print("Fl-score :", F2_score)
 
-clf_gini = DecisionTreeClassifier(criterion='gini', random_state=42)
-clf_gini.fit(X, y)
-plot_clean_tree(clf_gini,"Decision Tree (Gini Index)")
+# Practical - 8.2
+# AIM: To evaluate multi-class classification model using confusion matrix along with precision and recall.
 
-# Information Gain (Entropy)
-clf_entropy = DecisionTreeClassifier(criterion='entropy', random_state=42)
-clf_entropy.fit(X, y)
-plot_clean_tree(clf_entropy,"Decision Tree (Information Gain - Entropy)")
+# Import the necessary libraries
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+)
 
-# Gain Ratio
+# Load the dataset (Iris dataset is multi-class)
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=23
+)
 
-def entropy(col):
- elements, counts = np. unique(col, return_counts=True)
- return -np.sum([(counts[i]/np.sum(counts)) * np.log2(counts[i]/np.sum(counts))
- for i in range(len(elements))])
+# Train the Model
+model = DecisionTreeClassifier(random_state=23)
+model.fit(X_train, y_train)
 
-def gain_ratio(df, feature, target="PlayTennis"):
- total_entropy = entropy(df[target])
- vals, counts = np.unique(df[feature], return_counts=True)
- weighted_entropy = np.sum([(counts[i]/np.sum(counts)) *
- entropy(df[df[feature] == vals[i]][target]) for i in range(len(vals))])
- info_gain = total_entropy - weighted_entropy
- split_info = -np.sum([(counts[i]/np.sum(counts)) *
- np.log2(counts[i]/np.sum(counts)) for i in range(len(vals))])
- return info_gain / split_info if split_info != 0 else 0
+# Prediction
+y_pred = model.predict(X_test)
 
-# Print gain ratios
-print("\nGain Ratio values:")
-for col in ['Outlook', 'Temperature', 'Humidity', 'Windy']:
-  print(f"{col}: {gain_ratio(df, col):.4f}")
+# Compute the Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
 
-plot_clean_tree(clf_entropy,"Decision Tree (Approximated Gain Ratio using Entropy Tree)")
+# Plot the Confusion Matrix
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="g",
+    xticklabels=["Setosa", "Versicolor", "Virginica"],
+    yticklabels=["Setosa", "Versicolor", "Virginica"],
+)
+plt.ylabel("Actual", fontsize=13)
+plt.xlabel("Predicted", fontsize=13)
+plt.title("Confusion Matrix (Multi-Class)", fontsize=17)
+plt.show()
+
+# Finding accuracy, precision, recall and F1-score
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy :", accuracy)
+
+# For multi-class, use 'macro' or 'weighted' average
+precision = precision_score(y_test, y_pred, average="macro")
+print("Precision :", precision)
+
+recall = recall_score(y_test, y_pred, average="macro")
+print("Recall :", recall)
+
+F1_score = f1_score(y_test, y_pred, average="macro")
+print("F1-score :", F1_score)
+
+# Optional: Detailed report
+print("\nClassification Report:\n")
+print(
+    classification_report(
+        y_test, y_pred, target_names=["Setosa", "Versicolor", "Virginica"]
+    )
+)

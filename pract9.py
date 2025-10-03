@@ -1,42 +1,47 @@
-#AIM: 8.1 To evaluate binary classification model using confusion matrix along with precision and recall.
-#import the necessary libraries
+# Practical-9
+# Use an appropriate dataset and create a supervised learning model,  Analyse the model with ROC-AUC.
+
+
+# Import necessary libraries
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score, roc_curve, accuracy_score
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, precision_score, recall_score,f1_score
+import seaborn as sns
 
-#load the breast cancer dataset
-X, Y= load_breast_cancer(return_X_y=True)
-X_train, X_test, Y_train, Y_test=train_test_split(X,Y,test_size=0.025)
+# Load the Breast Cancer dataset
+X, y = load_breast_cancer(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=23
+)
 
-#train the model
-tree = DecisionTreeClassifier(random_state=23)
-tree.fit(X_train,Y_train)
-#preduction
-Y_pred = tree.predict(X_test)
+# Create and train the Supervised Learning Model (Random Forest)
+model = RandomForestClassifier(random_state=23)
+model.fit(X_train, y_train)
 
-#compute the confusion matrix
-cm = confusion_matrix(Y_test, Y_pred)
-#plot the confusion matrix
-sns.heatmap(cm, 
-            annot=True,
-            fmt='g',
-            xticklabels=['malignant','benign'],
-            yticklabels=['malilgnant','benign'])
-plt.ylabel('Prediction',fontsize=13)
-plt.xlabel('Actual',fontsize=13)
-plt.title('Confusion Matrix',fontsize=17)
+# Predict probabilities (needed for ROC curve)
+y_prob = model.predict_proba(X_test)[:, 1]  # Probability of positive class
+y_pred = model.predict(X_test)
+
+# Evaluate model accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy :", accuracy)
+
+# Calculate ROC-AUC score
+roc_auc = roc_auc_score(y_test, y_prob)
+print("ROC-AUC Score :", roc_auc)
+
+# Compute ROC curve values
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+
+# Plot ROC Curve
+plt.figure(figsize=(7, 5))
+sns.lineplot(x=fpr, y=tpr, label=f"ROC Curve (AUC = {roc_auc:.2f})")
+plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Random Guess")
+plt.title("Receiver Operating Characteristic (ROC) Curve", fontsize=15)
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.grid(True)
 plt.show()
-
-#finding precision and recall
-#accuracy = accuracy_score(Y_test,Y_pred)
-#print("Accuracy:",accuracy)
-precision = precision_score(Y_test, Y_pred)
-print("Precision:", precision)
-recall = recall_score(Y_test, Y_pred)
-print("Recall:", recall)
-#F1_score = f1_score(Y_test,Y_pred)
-#print("f1_score:", F1_score)
